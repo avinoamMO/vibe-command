@@ -1,0 +1,90 @@
+# =============================================================
+#  vibe-command — Dev HUD for Claude Code
+#  Theme: Matrix — green on black, digital rain aesthetic
+#  Colors: bright green (46) on near-black (232), lighter green (118) accents
+# =============================================================
+
+# Enable mouse mode (scroll, click, resize panes)
+set -g mouse on
+
+# Increase scrollback buffer
+set -g history-limit 10000
+
+# Slower mouse scrolling (1 line per scroll)
+bind-key -T copy-mode WheelUpPane send-keys -X -N 1 scroll-up
+bind-key -T copy-mode WheelDownPane send-keys -X -N 1 scroll-down
+bind-key -T copy-mode-vi WheelUpPane send-keys -X -N 1 scroll-up
+bind-key -T copy-mode-vi WheelDownPane send-keys -X -N 1 scroll-down
+
+# Don't exit copy mode when selecting text
+bind-key -T copy-mode MouseDragEnd1Pane send-keys -X copy-selection
+bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-selection
+
+# Don't exit copy mode on double/triple click
+bind-key -T copy-mode DoubleClick1Pane select-pane \; send-keys -X select-word
+bind-key -T copy-mode-vi DoubleClick1Pane select-pane \; send-keys -X select-word
+bind-key -T copy-mode TripleClick1Pane select-pane \; send-keys -X select-line
+bind-key -T copy-mode-vi TripleClick1Pane select-pane \; send-keys -X select-line
+
+# Middle click to copy selection to system clipboard
+bind-key -T copy-mode MouseDown2Pane send-keys -X copy-pipe-and-cancel "pbcopy"
+bind-key -T copy-mode-vi MouseDown2Pane send-keys -X copy-pipe-and-cancel "pbcopy"
+
+# =============================================================
+#  Dev HUD — Matrix command center
+# =============================================================
+
+HUD="~/.claude/scripts/tmux-hud.sh"
+
+# -- General --
+set -g status on
+set -g status-interval 5
+set -g status-position bottom
+
+# -- Base status style: bright green on near-black --
+set -g status-style "fg=colour46,bg=colour232"
+
+# -- Left: work time + git (branch, status, sync) --
+set -g status-left-length 70
+set -g status-left "\
+#[fg=colour232,bg=colour46,bold] #S \
+#[fg=colour232,bg=colour232] \
+#[fg=colour118]#(~/.claude/scripts/tmux-hud.sh worktime) \
+#[fg=colour238]{{DIV}} \
+#[fg=colour46]#(~/.claude/scripts/tmux-hud.sh branch) \
+#[fg=colour238][#[fg=colour118]#(~/.claude/scripts/tmux-hud.sh status)#[fg=colour238] \
+#[fg=colour46]#(~/.claude/scripts/tmux-hud.sh git_sync)#[fg=colour238]] "
+
+# -- Right: state + context + tokens + agents + commits + clock --
+set -g status-right-length 90
+set -g status-right "\
+#(~/.claude/scripts/tmux-hud.sh claude_state) \
+#[fg=colour118]ctx:#(~/.claude/scripts/tmux-hud.sh context_pct) \
+#[fg=colour238]{{DIV}} \
+#[fg=colour118]#(~/.claude/scripts/tmux-hud.sh tokens) tok \
+#[fg=colour238]{{DIV}} \
+#[fg=colour46]#(~/.claude/scripts/tmux-hud.sh agents) agt \
+#[fg=colour238]{{DIV}} \
+#[fg=colour46]#(~/.claude/scripts/tmux-hud.sh commits) commits \
+#[fg=colour238]{{DIV}} \
+#[fg=colour232,bg=colour46,bold] %H:%M "
+
+# -- Window tabs --
+set -g window-status-format "\
+#[fg=colour238,bg=colour232] #I:#[fg=colour118]#W "
+set -g window-status-current-format "\
+#[fg=colour232,bg=colour46,bold] #I:#W \
+#[fg=colour46,bg=colour232,none]"
+set -g window-status-separator ""
+
+# -- Borders --
+set -g pane-border-style "fg=colour236"
+set -g pane-active-border-style "fg=colour46"
+
+# -- Messages --
+set -g message-style "fg=colour232,bg=colour46,bold"
+set -g message-command-style "fg=colour232,bg=colour46"
+
+# -- Clock --
+set -g clock-mode-colour colour46
+set -g clock-mode-style 24
