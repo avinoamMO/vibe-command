@@ -23,7 +23,7 @@ echo -e "${RED}  vibe-command uninstaller${NC}"
 echo ""
 
 # -----------------------------------------------------------
-#  Remove shell wrapper
+#  Remove shell wrapper (both v1 and v2 markers)
 # -----------------------------------------------------------
 info "Removing shell wrapper..."
 
@@ -54,7 +54,7 @@ done
 info "Removing hooks from Claude Code settings..."
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
-if [[ -f "$SETTINGS_FILE" ]] && grep -q "ra2-sounds.sh" "$SETTINGS_FILE"; then
+if [[ -f "$SETTINGS_FILE" ]] && (grep -q "sound-hook.sh\|ra2-sounds.sh\|claude-state.sh" "$SETTINGS_FILE"); then
     python3 -c "
 import json
 
@@ -63,15 +63,16 @@ with open('$SETTINGS_FILE') as f:
 
 hooks = settings.get('hooks', {})
 
-for event in ['PostToolUse', 'Stop', 'Notification']:
-    if event in hooks:
-        hooks[event] = [h for h in hooks[event]
-                        if not any('ra2-sounds' in str(hook) for hook in h.get('hooks', []))]
-        if not hooks[event]:
-            del hooks[event]
+for event in list(hooks.keys()):
+    hooks[event] = [h for h in hooks[event]
+                    if not any(any(kw in str(hook) for kw in ['sound-hook', 'ra2-sounds', 'claude-state'])
+                              for hook in h.get('hooks', []))]
+    if not hooks[event]:
+        del hooks[event]
 
 if not hooks:
-    del settings['hooks']
+    if 'hooks' in settings:
+        del settings['hooks']
 
 with open('$SETTINGS_FILE', 'w') as f:
     json.dump(settings, f, indent=2)
@@ -84,9 +85,15 @@ fi
 info "Removing scripts..."
 rm -f "$HOME/.claude/scripts/tmux-hud.sh"
 rm -f "$HOME/.claude/hooks/ra2-sounds.sh"
+rm -f "$HOME/.claude/hooks/sound-hook.sh"
+rm -f "$HOME/.claude/hooks/claude-state.sh"
 
 info "Removing sounds..."
-# Only remove the specific RA2 sounds we installed
+# Remove all sound pack directories
+rm -rf "$HOME/.claude/sounds/ra2"
+rm -rf "$HOME/.claude/sounds/homm3"
+
+# Also clean up any legacy flat sounds (v1 installs)
 for sound in acknowledged affirmative at_your_service battle_control_online \
     battle_control_terminated building construction_complete da for_mother_russia \
     insufficient_funds kirov_reporting mission_accomplished moving_out \
@@ -94,6 +101,9 @@ for sound in acknowledged affirmative at_your_service battle_control_online \
     unable_to_comply unit_ready yes_commander; do
     rm -f "$HOME/.claude/sounds/${sound}.mp3" "$HOME/.claude/sounds/${sound}.aiff"
 done
+
+info "Removing config..."
+rm -f "$HOME/.claude/vibe-command.conf"
 
 # Clean up empty dirs
 rmdir "$HOME/.claude/sounds" 2>/dev/null || true
