@@ -44,25 +44,29 @@ set -g status-position bottom
 # -- Base status style --
 set -g status-style "fg=colour252,bg=colour234"
 
-# -- Left: work time + git --
+# -- Left: work time + git (branch, status, sync) --
 set -g status-left-length 70
 set -g status-left "\
 #[fg=colour{{SECONDARY}},bg=colour{{PRIMARY}},bold] #S \
 #[fg=colour234,bg=colour234] \
 #[fg=colour{{LIGHT}}]#(~/.claude/scripts/tmux-hud.sh worktime) \
-#[fg=colour240]| \
+#[fg=colour240]{{DIV}} \
 #[fg=colour{{PRIMARY}}]#(~/.claude/scripts/tmux-hud.sh branch) \
-#[fg=colour240][#[fg=colour252]#(~/.claude/scripts/tmux-hud.sh status)#[fg=colour240]] "
+#[fg=colour240][#[fg=colour252]#(~/.claude/scripts/tmux-hud.sh status)#[fg=colour240] \
+#[fg=colour{{ACCENT}}]#(~/.claude/scripts/tmux-hud.sh git_sync)#[fg=colour240]] "
 
-# -- Right: tokens + agents + commits + clock --
-set -g status-right-length 80
+# -- Right: state + context + tokens + agents + commits + clock --
+set -g status-right-length 90
 set -g status-right "\
+#(~/.claude/scripts/tmux-hud.sh claude_state) \
+#[fg=colour252]ctx:#(~/.claude/scripts/tmux-hud.sh context_pct) \
+#[fg=colour240]{{DIV}} \
 #[fg=colour252]#(~/.claude/scripts/tmux-hud.sh tokens) tok \
-#[fg=colour240]| \
+#[fg=colour240]{{DIV}} \
 #[fg=colour{{LIGHT}}]#(~/.claude/scripts/tmux-hud.sh agents) agt \
-#[fg=colour240]| \
+#[fg=colour240]{{DIV}} \
 #[fg=colour{{ACCENT}}]#(~/.claude/scripts/tmux-hud.sh commits) commits \
-#[fg=colour240]| \
+#[fg=colour240]{{DIV}} \
 #[fg=colour{{SECONDARY}},bg=colour{{PRIMARY}},bold] %H:%M "
 
 # -- Window tabs --

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================
 #  Dev HUD — tmux status bar data provider
-#  Components: worktime, tokens, agents, commits, branch, status
+#  Components: worktime, tokens, agents, commits, branch, status,
+#              context_pct, git_sync, claude_state
 #
 #  Usage: tmux-hud.sh <component>
 #  Called by tmux status-left / status-right every N seconds
@@ -243,24 +244,178 @@ get_git_status() {
 }
 
 # -----------------------------------------------------------
+#  CONTEXT WINDOW % (token usage of current session)
+#  Cache: 30s
+# -----------------------------------------------------------
+get_context_pct() {
+    local val
+    if val=$(cached context_pct 30); then
+        echo "$val"
+        return
+    fi
+
+    val=$(python3 -c "
+import json, os, glob
+
+base = os.path.expanduser('~/.claude/projects')
+if not os.path.isdir(base):
+    print('0%')
+    exit()
+
+# Find most recent .jsonl that isn't in a subagents dir
+candidates = []
+for root, dirs, files in os.walk(base):
+    # Skip subagent directories
+    if '/subagents' in root or 'subagents' in os.path.basename(root):
+        continue
+    for f in files:
+        if f.endswith('.jsonl'):
+            fpath = os.path.join(root, f)
+            candidates.append((os.path.getmtime(fpath), fpath))
+
+if not candidates:
+    print('?')
+    exit()
+
+candidates.sort(reverse=True)
+latest = candidates[0][1]
+
+# Read last usage block from the file (scan last 50 lines for speed)
+lines = []
+try:
+    with open(latest, 'rb') as fh:
+        # Seek to end and read last ~50KB
+        fh.seek(0, 2)
+        size = fh.tell()
+        fh.seek(max(0, size - 50000))
+        chunk = fh.read().decode('utf-8', errors='replace')
+        lines = chunk.strip().split('\n')
+except:
+    print('?')
+    exit()
+
+# Find last line with usage data
+total = 0
+for line in reversed(lines):
+    if 'input_tokens' not in line:
+        continue
+    try:
+        d = json.loads(line)
+        u = d.get('usage') or (d.get('message') or {}).get('usage')
+        if u:
+            total = u.get('input_tokens', 0)
+            total += u.get('cache_creation_input_tokens', 0)
+            total += u.get('cache_read_input_tokens', 0)
+            break
+    except:
+        continue
+
+if total == 0:
+    print('0%')
+else:
+    pct = min(int(total * 100 / 200000), 100)
+    print(f'{pct}%')
+" 2>/dev/null)
+
+    val="${val:-?}"
+    write_cache context_pct "$val"
+    echo "$val"
+}
+
+# -----------------------------------------------------------
+#  GIT PUSH/SYNC STATUS (ahead/behind remote)
+#  Cache: 30s
+# -----------------------------------------------------------
+get_git_sync() {
+    local val
+    if val=$(cached git_sync 30); then
+        echo "$val"
+        return
+    fi
+
+    local cwd
+    cwd=$(get_pane_cwd)
+
+    # Check if upstream is configured
+    if ! git -C "$cwd" rev-parse --abbrev-ref '@{u}' &>/dev/null; then
+        write_cache git_sync ""
+        echo ""
+        return
+    fi
+
+    local ahead behind indicator=""
+    ahead=$(git -C "$cwd" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)
+    behind=$(git -C "$cwd" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)
+
+    [[ "$ahead" -gt 0 ]] && indicator="^${ahead}"
+    [[ "$behind" -gt 0 ]] && indicator="${indicator}v${behind}"
+
+    write_cache git_sync "$indicator"
+    echo "$indicator"
+}
+
+# -----------------------------------------------------------
+#  CLAUDE STATE (status circle: working/waiting/error/idle)
+#  No cache — reads state file directly (cheap)
+# -----------------------------------------------------------
+get_claude_state() {
+    local state_file="$CACHE_DIR/claude-state"
+
+    if [[ ! -f "$state_file" ]]; then
+        # No state = idle (grey)
+        echo "#[fg=colour240]●"
+        return
+    fi
+
+    local state now mtime age
+    state=$(cat "$state_file" 2>/dev/null)
+    now=$(date +%s)
+    if [[ "$(uname)" == "Darwin" ]]; then
+        mtime=$(stat -f %m "$state_file" 2>/dev/null)
+    else
+        mtime=$(stat -c %Y "$state_file" 2>/dev/null)
+    fi
+    age=$((now - mtime))
+
+    # Idle detection: >300s (5 min) since last state change
+    if [[ $age -gt 300 ]]; then
+        echo "#[fg=colour240]●"
+        return
+    fi
+
+    case "$state" in
+        working)  echo "#[fg=colour46]●" ;;   # bright green
+        waiting)  echo "#[fg=colour226]●" ;;   # yellow
+        error)    echo "#[fg=colour196]●" ;;   # red
+        *)        echo "#[fg=colour240]●" ;;   # grey
+    esac
+}
+
+# -----------------------------------------------------------
 #  DISPATCH
 # -----------------------------------------------------------
 case "$COMPONENT" in
-    worktime)  get_work_time ;;
-    tokens)    get_tokens_today ;;
-    agents)    get_active_agents ;;
-    commits)   get_commits_today ;;
-    branch)    get_git_branch ;;
-    status)    get_git_status ;;
+    worktime)    get_work_time ;;
+    tokens)      get_tokens_today ;;
+    agents)      get_active_agents ;;
+    commits)     get_commits_today ;;
+    branch)      get_git_branch ;;
+    status)      get_git_status ;;
+    context_pct) get_context_pct ;;
+    git_sync)    get_git_sync ;;
+    claude_state) get_claude_state ;;
     all)
-        echo "WORK:    $(get_work_time)"
-        echo "TOKENS:  $(get_tokens_today)"
-        echo "AGENTS:  $(get_active_agents)"
-        echo "COMMITS: $(get_commits_today)"
-        echo "BRANCH:  $(get_git_branch)"
-        echo "STATUS:  $(get_git_status)"
+        echo "WORK:      $(get_work_time)"
+        echo "TOKENS:    $(get_tokens_today)"
+        echo "AGENTS:    $(get_active_agents)"
+        echo "COMMITS:   $(get_commits_today)"
+        echo "BRANCH:    $(get_git_branch)"
+        echo "STATUS:    $(get_git_status)"
+        echo "CONTEXT:   $(get_context_pct)"
+        echo "GIT_SYNC:  $(get_git_sync)"
+        echo "STATE:     $(get_claude_state)"
         ;;
     *)
-        echo "Usage: tmux-hud.sh {worktime|tokens|agents|commits|branch|status|all}"
+        echo "Usage: tmux-hud.sh {worktime|tokens|agents|commits|branch|status|context_pct|git_sync|claude_state|all}"
         ;;
 esac

@@ -1,12 +1,46 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_HOOK_EVENT=PreToolUse {{HOME}}/.claude/hooks/claude-state.sh <<< '{}'",
+            "async": true
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "TaskUpdate|Bash|Task",
         "hooks": [
           {
             "type": "command",
-            "command": "{{HOME}}/.claude/hooks/ra2-sounds.sh"
+            "command": "{{HOME}}/.claude/hooks/sound-hook.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_HOOK_EVENT=PostToolUse {{HOME}}/.claude/hooks/claude-state.sh <<< '{}'",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_HOOK_EVENT=PostToolUseFailure {{HOME}}/.claude/hooks/claude-state.sh <<< '{}'",
+            "async": true
           }
         ]
       }
@@ -17,7 +51,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLAUDE_HOOK_EVENT=Stop {{HOME}}/.claude/hooks/ra2-sounds.sh <<< '{}'"
+            "command": "CLAUDE_HOOK_EVENT=Stop {{HOME}}/.claude/hooks/sound-hook.sh <<< '{}'"
+          },
+          {
+            "type": "command",
+            "command": "CLAUDE_HOOK_EVENT=Stop {{HOME}}/.claude/hooks/claude-state.sh <<< '{}'",
+            "async": true
           }
         ]
       }
@@ -28,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CLAUDE_HOOK_EVENT=Notification {{HOME}}/.claude/hooks/ra2-sounds.sh <<< '{}'"
+            "command": "CLAUDE_HOOK_EVENT=Notification {{HOME}}/.claude/hooks/sound-hook.sh <<< '{}'"
           }
         ]
       }
