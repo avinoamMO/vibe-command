@@ -1,0 +1,15 @@
+# vibe-command configuration
+# Installed to ~/.claude/vibe-command.conf
+# Edit that file to customize — it won't be overwritten on upgrade.
+
+# Sound pack: ra2 | homm3
+sound_pack=ra2
+
+# Visual theme: flag | matrix | scifi
+visual_theme=flag
+
+# Country code (2-letter ISO). Leave empty for auto-detect.
+country=
+
+# Use powerline glyphs (requires Nerd Font): true | false
+powerline_glyphs=false
