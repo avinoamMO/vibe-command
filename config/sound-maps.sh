@@ -73,7 +73,8 @@ get_sound_random() {
     [[ -z "$sounds" ]] && return
 
     # Split into array and pick random
-    local arr=($sounds)
+    local arr
+    read -ra arr <<< "$sounds"
     local idx=$(( RANDOM % ${#arr[@]} ))
     echo "${arr[$idx]}"
 }

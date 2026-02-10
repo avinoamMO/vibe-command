@@ -27,8 +27,10 @@ MAPS_FILE="$REPO_DIR/config/sound-maps.sh"
 
 # Try installed location first, then repo location
 if [[ -f "$HOME/.vibe-command/config/sound-maps.sh" ]]; then
+    # shellcheck source=../config/sound-maps.sh
     source "$HOME/.vibe-command/config/sound-maps.sh"
 elif [[ -f "$MAPS_FILE" ]]; then
+    # shellcheck source=../config/sound-maps.sh
     source "$MAPS_FILE"
 else
     # Inline fallback — just play from SOUNDS_DIR directly
