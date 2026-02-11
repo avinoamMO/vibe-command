@@ -12,9 +12,11 @@
   <br>
   Sound effects on every tool call. Real-time tmux HUD. Flag-themed colors.
   <br><br>
+  <a href="https://github.com/avinoamMO/vibe-command/actions/workflows/test.yml"><img src="https://github.com/avinoamMO/vibe-command/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
   <a href="https://github.com/avinoamMO/vibe-command/releases"><img src="https://img.shields.io/github/v/release/avinoamMO/vibe-command?style=flat-square&color=red" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/avinoamMO/vibe-command?style=flat-square" alt="License: MIT"></a>
   <a href="https://github.com/avinoamMO/vibe-command/stargazers"><img src="https://img.shields.io/github/stars/avinoamMO/vibe-command?style=flat-square" alt="Stars"></a>
+  <img src="https://img.shields.io/badge/tests-117%20passing-brightgreen?style=flat-square" alt="Tests: 117 passing" />
   <a href="#"><img src="https://img.shields.io/badge/shell-bash-green?style=flat-square" alt="Shell: Bash"></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square" alt="Platform"></a>
 </p>
